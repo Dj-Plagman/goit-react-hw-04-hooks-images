@@ -1,22 +1,15 @@
-import React from 'react';
-import bs from './Button.module.css';
 import PropTypes from 'prop-types';
 
-const Button = ({ getNewPage }) => {
-  // console.log(getNewPage);
+const Button = ({ onClick }) => {
   return (
-    <button
-      className={bs.Button}
-      type="button"
-      data-action="load-more"
-      // disabled={true}
-      onClick={getNewPage}
-    >
-      Show more
+    <button type="button" className="Button" onClick={onClick}>
+      Load more
     </button>
   );
 };
+
 Button.propTypes = {
-  getNewPage: PropTypes.func.isRequired,
+  onClick: PropTypes.func.isRequired,
 };
+
 export default Button;

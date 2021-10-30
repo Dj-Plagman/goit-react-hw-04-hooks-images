@@ -1,28 +1,40 @@
-import React, { Component } from 'react';
-import ms from './Modal.module.css';
+import { useEffect } from 'react';
 import PropTypes from 'prop-types';
-class Modal extends Component {
-  componentDidMount() {
-    window.addEventListener('keydown', this.closeModal);
-  }
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.closeModal);
-  }
 
-  closeModal = e => {
-    if (e.target.nodeName !== 'IMG' || e.code === 'Escape') {
-      this.props.hideModal();
+const Modal = props => {
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDowm);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDowm);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleKeyDowm = e => {
+    console.log(e.code);
+    if (e.code === 'Escape') {
+      props.closeModal();
     }
   };
-  render() {
-    return (
-      <div className={ms.Overlay} onClick={this.closeModal}>
-        <div className={ms.Modal}>{this.props.children}</div>
+
+  const handleClick = e => {
+    if (e.target === e.currentTarget) {
+      props.closeModal();
+    }
+  };
+
+  return (
+    <div className="Overlay" onClick={handleClick}>
+      <div className="Modal">
+        <img src={props.largeimageurl} alt="" />
       </div>
-    );
-  }
-}
-Modal.propTypes = {
-  hideModal: PropTypes.func.isRequired,
+    </div>
+  );
 };
+
+Modal.propTypes = {
+  closeModal: PropTypes.func.isRequired,
+  largeimageurl: PropTypes.string.isRequired,
+};
+
 export default Modal;

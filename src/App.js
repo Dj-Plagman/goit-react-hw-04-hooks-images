@@ -1,97 +1,87 @@
-import React, { Component } from 'react';
-import './App.css';
-import 'react-loader-spinner/dist/loader/css/react-spinner-loader.css';
-import Loader from 'react-loader-spinner';
-import Searchbar from './component/Search/Searchbar';
-import fetchImages from './api/pixabayApi';
+import { useState, useEffect } from 'react';
+import Searchbar from './component/Searchbar/Searchbar';
 import ImageGallery from './component/ImageGallery/ImageGallery';
 import Button from './component/Button/Button';
-import Notifications from './component/Notification/Notifications';
+import Modal from './component/Modal/Modal';
+import apiService from './Services/apiService';
+import Loader from './component/Loader/Loader';
 
-class App extends Component {
-  state = {
-    query: '',
-    page: 1,
-    gallery: [],
-    fetchLength: null,
-    isLoading: false,
-    error: false,
+const App = () => {
+  const [stateImages, setStateImages] = useState([]);
+  const [stateQuery, setStateQuery] = useState('');
+  const [statePage, setStatePage] = useState(1);
+  const [stateShowModal, setStateShowModal] = useState(false);
+  const [stateLargeimageurl, setStateLargeimageurl] = useState('');
+  const [stateIsLoading, setStateIsLoading] = useState(false);
+
+  const formSubmitHandler = searchQuery => {
+    setStateQuery(searchQuery);
+    setStatePage(1);
+    setStateImages([]);
   };
 
-  componentDidUpdate(prevProps, prevState) {
-
-    const { query, page } = this.state;
-    if (query !== prevState.query && query !== '') {
-      this.fetchImagesByQuery(query);
-    } else if (query === prevState.query && page !== prevState.page) {
-      this.fetchImagesByQuery(query);
+  useEffect(() => {
+    if (stateQuery === '') {
+      return;
     }
-  }
 
-  getQueryByForm = ({ query }) => {
-    this.setState({ query: '', page: 1, gallery: [], fetchLength: 0 });
-    this.setState({ query: query, page: 1, gallery: [] });
+    setStateIsLoading(true);
+    setTimeout(() => {
+      apiService(stateQuery, statePage)
+        .then(response => {
+          setStateImages(prevState => [...prevState, ...response.data.hits]);
+        })
+        .finally(
+          setStateIsLoading(false),
+          setTimeout(() => {
+            scrollToButton();
+          }, 500),
+        );
+    }, 400);
+  }, [stateQuery, statePage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const openModal = e => {
+    setStateIsLoading(true);
+
+    setTimeout(() => {
+      setStateShowModal(true);
+      setStateLargeimageurl(e.target.getAttribute('largeimageurl'));
+      setStateIsLoading(false);
+    }, 300);
   };
 
-  setNewPage = e => {
-    e.preventDefault();
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const closeModal = () => {
+    setStateShowModal(false);
+    setStateLargeimageurl('');
   };
 
-  fetchImagesByQuery = (prevProps, prevState) => {
-    const { query, page } = this.state;
+  const incremenpPage = () => {
+    setStatePage(prevState => prevState + 1);
+  };
 
-    this.setState({ isLoading: true });
-    fetchImages(query, page)
-      .then(result => {
-        this.setState(prevState => ({
-          gallery: [...prevState.gallery, ...result],
-          fetchLength: result.length,
-        }));
-      })
-      .catch(error => {
-        this.setState({ error: true });
-      })
-      .finally(() => {
-        this.setState({ isLoading: false });
-        window.scrollTo({
-          top: document.documentElement.scrollHeight,
-          behavior: 'smooth',
-        });
+  const scrollToButton = () => {
+    if (statePage > 1) {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: 'smooth',
       });
-    // }
+    }
   };
-  render() {
-    const { gallery, fetchLength, isLoading, query, error } = this.state;
-    return (
-      <div className="App">
-        <h1>HD Gallery</h1>
-        <Searchbar onSubmit={this.getQueryByForm} />
-        <ImageGallery gallery={gallery} />
-        {isLoading && (
-          <Loader
-            type="ThreeDots"
-            color="#3f51b5"
-            height={100}
-            width={100}
-            timeout={3000}
-          />
-        )}
-        {fetchLength === 12 && !isLoading && (
-          <Button getNewPage={this.setNewPage} />
-        )}
 
-        <Notifications
-          fetchLength={fetchLength}
-          galleryLength={gallery.length}
-          searchQuery={query}
-          error={error}
-        />
-      </div>
-    );
-  }
-}
+  return (
+    <>
+      <Searchbar onSubmit={formSubmitHandler} />
+      <ImageGallery openModal={openModal} images={stateImages} />
+      {stateImages.length > 0 && <Button onClick={incremenpPage}></Button>}
+      {stateShowModal && (
+        <Modal
+          closeModal={closeModal}
+          largeimageurl={stateLargeimageurl}
+        ></Modal>
+      )}
+      {stateIsLoading && <Loader class={'Loader'}></Loader>}
+    </>
+  );
+};
 
 export default App;
